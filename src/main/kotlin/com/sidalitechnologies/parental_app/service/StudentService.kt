@@ -3,6 +3,7 @@ package com.sidalitechnologies.parental_app.service
 import com.sidalitechnologies.parental_app.model.Student
 import com.sidalitechnologies.parental_app.repository.StudentRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -22,26 +23,30 @@ lateinit var studentRepository: StudentRepository
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
 
-    suspend fun createMultiStudents(stdList: List<Student>):List<Student> = withContext(Dispatchers.IO){
-        stdRepo.saveAll(stdList)
+     fun createStudent(student: Student):Student?{
+        return stdRepo.save(student)
     }
 
-    suspend fun createStudent(student: Student):Student = withContext(Dispatchers.IO){
-        stdRepo.save(student)
+    private  fun getStudentByRollNo(rollNo:String):Student?{
+        val student= stdRepo.findByRollNo(rollNo) ?: return null
+        return student
     }
 
-    private suspend fun getStudentByRollNo(rollNo:String):Student? = withContext(Dispatchers.IO){
-        val query = Query(Criteria.where("rollNo").`is`(rollNo))
-        if (!mongoTemplate.exists(query,Student::class.java))
-            return@withContext null
+     fun getStudentsByParent(parentId:String):List<Student>{
+        val students=stdRepo.findAllByParentId(parentId)
+        if (students.isEmpty())
+            return emptyList()
 
-        return@withContext mongoTemplate.findOne(query,Student::class.java)
+        return students
     }
 
-    suspend fun deleteStudent(rollNo:String):Boolean = withContext(Dispatchers.IO){
-        val student=getStudentByRollNo(rollNo) ?: return@withContext false
-        studentRepository.delete(student)
-        true
+     fun deleteStudents(parentId:String):Boolean {
+        val students=getStudentsByParent(parentId)
+        if (students.isEmpty())
+            return false
+
+        stdRepo.deleteAll(students)
+        return true
     }
 
 }

@@ -41,7 +41,16 @@ class ParentController {
     lateinit var parentRepository: ParentRepository
 
     @PostMapping("/add-student")
-    suspend fun addStudent(@RequestBody student: Student): ResponseEntity<BaseResponse<Any>> {
+     fun addStudent(@Valid @RequestBody student: Student,bindingResult: BindingResult): ResponseEntity<BaseResponse<Any>> {
+        if (bindingResult.hasErrors()){
+            val errors=bindingResult.allErrors.map { it.defaultMessage }
+            return buildResponse(
+                "failed",
+                "validation errors",
+                HttpStatus.BAD_REQUEST,
+                data = errors
+            )
+        }
         val authenticated = SecurityContextHolder.getContext().authentication
         val isAdded = parentService.addStudent(authenticated.name, student)
         if (!isAdded) {
@@ -60,7 +69,7 @@ class ParentController {
     }
 
     @PutMapping("/update-parent")
-    suspend fun updateParent(
+     fun updateParent(
         @Valid @RequestBody dtoParent: DTOParent,
         bindingResult: BindingResult
     ): ResponseEntity<BaseResponse<Any>> {
@@ -93,7 +102,7 @@ class ParentController {
     }
 
     @GetMapping("/findAll")
-    suspend fun findAll(@RequestParam page:Int=0,size:Int=10): ResponseEntity<BaseResponse<Any>> {
+     fun findAll(@RequestParam page:Int=0,size:Int=10): ResponseEntity<BaseResponse<Any>> {
         val pageableData = parentService.getAll(PageRequest.of(page,size))
 
         val responseMap = mapOf(
@@ -113,7 +122,7 @@ class ParentController {
     }
 
     @GetMapping("/getByUsername/{username}")
-    suspend fun getByUserName(@PathVariable username: String): ResponseEntity<BaseResponse<Any>> {
+    fun getByUserName(@PathVariable username: String): ResponseEntity<BaseResponse<Any>> {
         val user = parentService.getByUsername(username)
         return if (user != null) {
             buildResponse(
@@ -133,7 +142,7 @@ class ParentController {
 
 
     @GetMapping("/getById/{id}")
-    suspend fun getById(@PathVariable id: String): ResponseEntity<BaseResponse<Any>> {
+     fun getById(@PathVariable id: String): ResponseEntity<BaseResponse<Any>> {
         val user = parentService.getById(id)
         return if (user != null) {
             buildResponse(
@@ -152,7 +161,7 @@ class ParentController {
     }
 
     @DeleteMapping("/delete-parent/{userName}")
-    suspend fun deleteParent(@PathVariable userName: String): ResponseEntity<BaseResponse<Any>> {
+     fun deleteParent(@PathVariable userName: String): ResponseEntity<BaseResponse<Any>> {
         if (userName.isEmpty())
             return buildResponse(
                 "failed",

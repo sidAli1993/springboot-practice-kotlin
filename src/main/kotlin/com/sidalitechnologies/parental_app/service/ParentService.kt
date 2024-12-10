@@ -8,6 +8,8 @@ import com.sidalitechnologies.parental_app.repository.ParentRepository
 import com.sidalitechnologies.parental_app.repository.StudentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.apache.coyote.Response
 import org.springframework.beans.factory.annotation.Autowired
@@ -35,35 +37,36 @@ class ParentService {
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 
-    suspend fun createParent(parent: Parent): Parent = withContext(Dispatchers.IO) {
-        studentService.createMultiStudents(parent.student?.toList() ?: emptyList())
-        return@withContext parentRepository.save(parent)
+    fun createParent(parent: Parent): Parent {
+        return parentRepository.save(parent)
     }
 
-    suspend fun getAll(pageable: Pageable): Page<Parent> = withContext(Dispatchers.IO){
-        parentRepository.findAll(pageable)
+    fun getAll(pageable: Pageable): Page<Parent> {
+        return parentRepository.findAll(pageable)
+        //        val offset =pageable.pageNumber*pageable.pageSize
+//        parentRepository.findPaginated(offset,pageable.pageSize).toList()
     }
 
-    suspend fun getByUsername(username: String): Parent? = withContext(Dispatchers.IO) {
-         parentRepository.findByUserName(username)
+    fun getByUsername(username: String): Parent? {
+        return parentRepository.findByUserName(username)
     }
 
-    suspend fun getById(id: String): Parent? = withContext(Dispatchers.IO) {
-        parentRepository.findById(id).orElse(null)
+    fun getById(id: String): Parent? {
+        return parentRepository.findById(id).orElse(null)
     }
 
-    suspend fun addStudent(username: String, student: Student): Boolean = withContext(Dispatchers.IO){
-        val parent = getByUsername(username) ?: return@withContext false
-        studentService.createStudent(student)
-        val existingStudents = parent.student ?: mutableListOf()
-        existingStudents.add(student)
-        parent.student = existingStudents
-        createParent(parent)
-        return@withContext true
+    fun addStudent(username: String, student: Student): Boolean {
+        val parent = getByUsername(username) ?: return false
+        student.parentId = parent.id
+        val studentCreated = runBlocking {
+            studentService.createStudent(student)
+        }
+        println(studentCreated)
+        return true
     }
 
     //through map
-    suspend fun updateParentMap(username: String, updateMap: Map<String, Any>): Boolean {
+    fun updateParentMap(username: String, updateMap: Map<String, Any>): Boolean {
         val parent = getByUsername(username) ?: return false
         val query = Query(Criteria.where("_id").`is`(parent.id))
         val update = Update()
@@ -75,51 +78,30 @@ class ParentService {
     }
 
     @Transactional
-    suspend fun updateParentDTO(username: String, dtoParent: DTOParent): Boolean = withContext(Dispatchers.IO){
+    fun updateParentDTO(username: String, dtoParent: DTOParent): Boolean {
         try {
-            val parent = getByUsername(username) ?: return@withContext false
+            val parent = getByUsername(username) ?: return false
             val query = Query(Criteria.where("_id").`is`(parent.id))
             val update = Update()
             val fieldsMAp = dtoParent.toNonNullMap()
             fieldsMAp.forEach { (key, value) ->
-                if (key != "id" && key != "userName" && key != "password" && key != "student")
+                if (key != "id" && key != "userName" && key != "password")
                     update.set(key, value)
             }
             mongoTemplate.updateFirst(query, update, Parent::class.java)
-            if (dtoParent.student == null) {
-                throw RuntimeException("Student record is empty")
-            }
-            dtoParent.student?.forEach { std ->
-                val queryStd = Query(Criteria.where("rollNo").`is`(std.rollNo))
-                if (!mongoTemplate.exists(queryStd, Student::class.java)) {
-                    return@withContext false
-                }
-                val stdMap = std.toNonNullMap()
-                stdMap.forEach { (key, value) ->
-                    if (key != "id")
-                        update.set(key, value)
-                }
-                mongoTemplate.updateFirst(queryStd, update, Student::class.java)
-            }
-            return@withContext true
+            return true
         } catch (e: Exception) {
-            return@withContext false
+            return false
         }
     }
 
     @Transactional
-    suspend fun deleteParent(userName: String): String = withContext(Dispatchers.IO) {
-        val parent = parentRepository.findByUserName(userName) ?: return@withContext "parent with $userName not found"
-        val failedDeletedStudents = mutableListOf<Student>()
-        parent.student?.forEach { std ->
-            val isDeleted = studentService.deleteStudent(std.rollNo)
-            if (!isDeleted)
-                failedDeletedStudents.add(std)
+     fun deleteParent(userName: String): String {
+        val parent = parentRepository.findByUserName(userName) ?: return "parent with $userName not found"
+        if (parent.id != null) {
+            studentService.deleteStudents(parent.id)
+            parentRepository.delete(parent)
         }
-        if (failedDeletedStudents.isNotEmpty())
-            return@withContext "Some students are failed to deleted $failedDeletedStudents"
-
-        parentRepository.delete(parent)
-        "Parent and its students are deleted"
+        return "Parent and its students are deleted"
     }
 }

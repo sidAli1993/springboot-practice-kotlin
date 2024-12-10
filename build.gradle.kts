@@ -30,7 +30,8 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
-
+	implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 	implementation("io.jsonwebtoken:jjwt-api:0.11.5")      // JWT API
 	implementation("io.jsonwebtoken:jjwt-impl:0.11.5")     // JWT implementation
 	implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")  // Required for JSON serialization/deserialization

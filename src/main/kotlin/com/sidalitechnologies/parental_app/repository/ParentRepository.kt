@@ -7,4 +7,7 @@ import org.springframework.stereotype.Component
 @Component
 interface ParentRepository :MongoRepository<Parent,String> {
     fun findByUserName(name: String): Parent?
+
+//    @Query("{}")
+//    fun findPaginated(skip:Int,limit:Int): Flow<Parent>
 }

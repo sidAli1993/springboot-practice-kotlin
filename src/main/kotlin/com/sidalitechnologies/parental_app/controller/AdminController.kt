@@ -33,15 +33,7 @@ class AdminController {
     lateinit var studentService: StudentService
 
     @GetMapping("/getAll")
-    fun getAllUsers(@RequestParam page:Int=0,size:Int=10):ResponseEntity<BaseResponse<Any>>{
-        if (page==0 || size==0){
-            return buildResponse(
-                "failed",
-                "please set the page and size",
-                HttpStatus.BAD_REQUEST
-            )
-        }
-
+     fun getAllUsers(@RequestParam page:Int=0,size:Int=10):ResponseEntity<BaseResponse<Any>>{
         val pageableData=parentService.getAll(PageRequest.of(page,size))
 
         val responseMap = mapOf(
