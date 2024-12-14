@@ -1,6 +1,7 @@
 package com.sidalitechnologies.parental_app.service
 
 import com.sidalitechnologies.parental_app.common.toNonNullMap
+import com.sidalitechnologies.parental_app.config.withSecurityContext
 import com.sidalitechnologies.parental_app.model.Parent
 import com.sidalitechnologies.parental_app.model.Student
 import com.sidalitechnologies.parental_app.model.dto_models.DTOParent
@@ -20,6 +21,8 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.context.ReactiveSecurityContextHolder
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -37,25 +40,24 @@ class ParentService {
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 
-    fun createParent(parent: Parent): Parent {
+    suspend fun createParent(parent: Parent): Parent {
         return parentRepository.save(parent)
     }
 
-    fun getAll(pageable: Pageable): Page<Parent> {
-        return parentRepository.findAll(pageable)
-        //        val offset =pageable.pageNumber*pageable.pageSize
-//        parentRepository.findPaginated(offset,pageable.pageSize).toList()
+    suspend fun getAll(page: Int, size: Int): List<Parent> {
+        val offset = page * size
+        return parentRepository.findPaginated(offset, size).toList()
     }
 
-    fun getByUsername(username: String): Parent? {
+    suspend fun getByUsername(username: String): Parent? {
         return parentRepository.findByUserName(username)
     }
 
-    fun getById(id: String): Parent? {
-        return parentRepository.findById(id).orElse(null)
+    suspend fun getById(id: String): Parent? {
+        return parentRepository.findById(id)
     }
 
-    fun addStudent(username: String, student: Student): Boolean {
+    suspend fun addStudent(username: String, student: Student): Boolean {
         val parent = getByUsername(username) ?: return false
         student.parentId = parent.id
         val studentCreated = runBlocking {
@@ -66,7 +68,7 @@ class ParentService {
     }
 
     //through map
-    fun updateParentMap(username: String, updateMap: Map<String, Any>): Boolean {
+    suspend fun updateParentMap(username: String, updateMap: Map<String, Any>): Boolean {
         val parent = getByUsername(username) ?: return false
         val query = Query(Criteria.where("_id").`is`(parent.id))
         val update = Update()
@@ -78,7 +80,7 @@ class ParentService {
     }
 
     @Transactional
-    fun updateParentDTO(username: String, dtoParent: DTOParent): Boolean {
+    suspend fun updateParentDTO(username: String, dtoParent: DTOParent): Boolean {
         try {
             val parent = getByUsername(username) ?: return false
             val query = Query(Criteria.where("_id").`is`(parent.id))
@@ -96,7 +98,7 @@ class ParentService {
     }
 
     @Transactional
-     fun deleteParent(userName: String): String {
+    suspend fun deleteParent(userName: String): String {
         val parent = parentRepository.findByUserName(userName) ?: return "parent with $userName not found"
         if (parent.id != null) {
             studentService.deleteStudents(parent.id)

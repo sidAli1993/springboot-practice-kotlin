@@ -6,6 +6,8 @@ import com.sidalitechnologies.parental_app.repository.ParentRepository
 import com.sidalitechnologies.parental_app.repository.StudentRepository
 import com.sidalitechnologies.parental_app.service.ParentService
 import com.sidalitechnologies.parental_app.service.StudentService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
@@ -33,22 +35,25 @@ class AdminController {
     lateinit var studentService: StudentService
 
     @GetMapping("/getAll")
-     fun getAllUsers(@RequestParam page:Int=0,size:Int=10):ResponseEntity<BaseResponse<Any>>{
-        val pageableData=parentService.getAll(PageRequest.of(page,size))
-
+    fun findAll(@RequestParam page: Int = 0, size: Int = 10): ResponseEntity<BaseResponse<Any>> {
+        val pageableData = runBlocking(Dispatchers.IO) { parentService.getAll(page, size) }
+        val totalElements = runBlocking { parentRepository.count() }
+        val totalPages = totalElements / size
+        val offset = page * size
+        val isLast = page <= totalPages
         val responseMap = mapOf(
-            "isLast" to pageableData.isLast,
-            "currentPage" to pageableData.pageable.pageNumber,
-            "totalPages" to pageableData.totalPages,
-            "totalSize" to pageableData.totalElements,
-            "parentList" to pageableData.content
+            "isLast" to isLast,
+            "currentPage" to page,
+            "totalPages" to totalPages,
+            "totalSize" to totalElements,
+            "parentList" to pageableData
         )
-
         return buildResponse(
             "success",
-            "parent list found",
+            "",
             HttpStatus.OK,
-            data = responseMap
+            null,
+            responseMap
         )
     }
 }

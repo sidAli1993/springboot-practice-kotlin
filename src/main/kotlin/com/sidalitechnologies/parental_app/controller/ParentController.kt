@@ -2,6 +2,7 @@ package com.sidalitechnologies.parental_app.controller
 
 import com.fasterxml.jackson.databind.ser.Serializers.Base
 import com.sidalitechnologies.parental_app.common.buildResponse
+import com.sidalitechnologies.parental_app.config.withSecurityContext
 import com.sidalitechnologies.parental_app.model.BaseResponse
 import com.sidalitechnologies.parental_app.model.Parent
 import com.sidalitechnologies.parental_app.model.Student
@@ -10,6 +11,10 @@ import com.sidalitechnologies.parental_app.repository.ParentRepository
 import com.sidalitechnologies.parental_app.service.JwtTokenProvider
 import com.sidalitechnologies.parental_app.service.ParentService
 import jakarta.validation.Valid
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
@@ -41,7 +46,7 @@ class ParentController {
     lateinit var parentRepository: ParentRepository
 
     @PostMapping("/add-student")
-     fun addStudent(@Valid @RequestBody student: Student,bindingResult: BindingResult): ResponseEntity<BaseResponse<Any>> {
+    fun addStudent(@Valid @RequestBody student: Student,bindingResult: BindingResult): ResponseEntity<BaseResponse<Any>> {
         if (bindingResult.hasErrors()){
             val errors=bindingResult.allErrors.map { it.defaultMessage }
             return buildResponse(
@@ -52,7 +57,7 @@ class ParentController {
             )
         }
         val authenticated = SecurityContextHolder.getContext().authentication
-        val isAdded = parentService.addStudent(authenticated.name, student)
+        val isAdded = runBlocking {  parentService.addStudent(authenticated.name, student) }
         if (!isAdded) {
             return buildResponse(
                 "failed",
@@ -69,7 +74,7 @@ class ParentController {
     }
 
     @PutMapping("/update-parent")
-     fun updateParent(
+    fun updateParent(
         @Valid @RequestBody dtoParent: DTOParent,
         bindingResult: BindingResult
     ): ResponseEntity<BaseResponse<Any>> {
@@ -85,7 +90,7 @@ class ParentController {
         }
 
 
-        val isUpdated = parentService.updateParentDTO(auth.name, dtoParent)
+        val isUpdated = runBlocking {  parentService.updateParentDTO(auth.name, dtoParent) }
         if (!isUpdated)
             return buildResponse(
                 "failed",
@@ -97,20 +102,23 @@ class ParentController {
             "success",
             "Parent has been updated",
             HttpStatus.CREATED,
-            data = parentService.getByUsername(auth.name)
+            data = runBlocking {  parentService.getByUsername(auth.name) }
         )
     }
 
     @GetMapping("/findAll")
-     fun findAll(@RequestParam page:Int=0,size:Int=10): ResponseEntity<BaseResponse<Any>> {
-        val pageableData = parentService.getAll(PageRequest.of(page,size))
-
+      fun findAll(@RequestParam page:Int=0,size:Int=10): ResponseEntity<BaseResponse<Any>> {
+        val pageableData = runBlocking(Dispatchers.IO) {  parentService.getAll(page,size) }
+        val totalElements= runBlocking { parentRepository.count() }
+        val totalPages=totalElements/size
+        val offset=page*size
+        val isLast=page<=totalPages
         val responseMap = mapOf(
-            "isLast" to pageableData.isLast,
-            "currentPage" to pageableData.pageable.pageNumber,
-            "totalPages" to pageableData.totalPages,
-            "totalSize" to pageableData.totalElements,
-            "parentList" to pageableData.content
+            "isLast" to isLast,
+            "currentPage" to page,
+            "totalPages" to totalPages,
+            "totalSize" to totalElements,
+            "parentList" to pageableData
         )
         return buildResponse(
             "success",
@@ -122,8 +130,12 @@ class ParentController {
     }
 
     @GetMapping("/getByUsername/{username}")
-    fun getByUserName(@PathVariable username: String): ResponseEntity<BaseResponse<Any>> {
-        val user = parentService.getByUsername(username)
+     fun getByUserName(@PathVariable username: String): ResponseEntity<BaseResponse<Any>>  {
+        println("parent controlller Before: ${SecurityContextHolder.getContext().authentication}")
+        val user = runBlocking {
+             parentService.getByUsername(username)
+        }
+        
         return if (user != null) {
             buildResponse(
                 "success",
@@ -142,8 +154,8 @@ class ParentController {
 
 
     @GetMapping("/getById/{id}")
-     fun getById(@PathVariable id: String): ResponseEntity<BaseResponse<Any>> {
-        val user = parentService.getById(id)
+    fun getById(@PathVariable id: String): ResponseEntity<BaseResponse<Any>> {
+        val user = runBlocking(Dispatchers.IO) {  parentService.getById(id) }
         return if (user != null) {
             buildResponse(
                 "success",
@@ -161,14 +173,14 @@ class ParentController {
     }
 
     @DeleteMapping("/delete-parent/{userName}")
-     fun deleteParent(@PathVariable userName: String): ResponseEntity<BaseResponse<Any>> {
+    fun deleteParent(@PathVariable userName: String): ResponseEntity<BaseResponse<Any>> {
         if (userName.isEmpty())
             return buildResponse(
                 "failed",
                 "Username is empty",
                 HttpStatus.BAD_REQUEST
             )
-        val message = parentService.deleteParent(userName)
+        val message = runBlocking(Dispatchers.IO) {  parentService.deleteParent(userName) }
 
         return buildResponse(
             "success",

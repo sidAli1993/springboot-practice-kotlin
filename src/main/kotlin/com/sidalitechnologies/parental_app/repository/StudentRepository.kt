@@ -9,7 +9,7 @@ import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 import org.springframework.stereotype.Component
 
 @Component
-interface StudentRepository:MongoRepository<Student,String> {
-     fun findAllByParentId(parentId:String):List<Student>
-     fun findByRollNo(rollNo:String):Student?
+interface StudentRepository:CoroutineCrudRepository<Student,String> {
+     suspend fun findAllByParentId(parentId:String):List<Student>
+     suspend fun findByRollNo(rollNo:String):Student?
 }

@@ -4,6 +4,7 @@ import com.sidalitechnologies.parental_app.model.Student
 import com.sidalitechnologies.parental_app.repository.StudentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -23,16 +24,16 @@ lateinit var studentRepository: StudentRepository
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
 
-     fun createStudent(student: Student):Student?{
-        return stdRepo.save(student)
+     suspend fun createStudent(student: Student):Student?{
+        return  stdRepo.save(student)
     }
 
-    private  fun getStudentByRollNo(rollNo:String):Student?{
+    private suspend fun getStudentByRollNo(rollNo:String):Student?{
         val student= stdRepo.findByRollNo(rollNo) ?: return null
         return student
     }
 
-     fun getStudentsByParent(parentId:String):List<Student>{
+     suspend fun getStudentsByParent(parentId:String):List<Student>{
         val students=stdRepo.findAllByParentId(parentId)
         if (students.isEmpty())
             return emptyList()
@@ -40,7 +41,7 @@ lateinit var studentRepository: StudentRepository
         return students
     }
 
-     fun deleteStudents(parentId:String):Boolean {
+     suspend fun deleteStudents(parentId:String):Boolean {
         val students=getStudentsByParent(parentId)
         if (students.isEmpty())
             return false

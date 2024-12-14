@@ -3,10 +3,12 @@ package com.sidalitechnologies.parental_app.config
 import com.mongodb.client.MongoClients
 import com.sidalitechnologies.parental_app.service.CustomUserDetailsServiceImpl
 import com.sidalitechnologies.parental_app.service.JwtTokenProvider
+import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.task.TaskDecorator
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.SimpleMongoClientDatabaseFactory
 import org.springframework.security.authentication.AuthenticationManager
@@ -77,13 +79,6 @@ class SpringSecurityConfiguration(
         return authProvider
     }
 
-//    in spring boot auto configuration  no need to creatre mongo tempelate bean
-//    @Bean
-//    fun mongoTemplate():MongoTemplate{
-//        val mongoClient = MongoClients.create(mongoUri)
-//        val databaseFactory = SimpleMongoClientDatabaseFactory(mongoClient, databaseName)
-//        return MongoTemplate(databaseFactory)
-//    }
 
 
 }
