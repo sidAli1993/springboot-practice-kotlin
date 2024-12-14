@@ -41,7 +41,7 @@ class PublicController {
 
 
     @PostMapping("/create")
-    fun createParent(@RequestBody parent: Parent): ResponseEntity<BaseResponse<Any>> {
+     suspend fun createParent(@RequestBody parent: Parent): ResponseEntity<BaseResponse<Any>> {
         if (parentRepository.findByUserName(parent.userName) != null) {
             return buildResponse(
                 status = "failed",
@@ -70,7 +70,7 @@ class PublicController {
     }
 
     @PostMapping("/login")
-    fun doLogin(@RequestBody loginRequest: LoginRequest): ResponseEntity<BaseResponse<Any>> {
+     suspend fun doLogin(@RequestBody loginRequest: LoginRequest): ResponseEntity<BaseResponse<Any>> {
         if (loginRequest.userName.isNotEmpty())
             if (parentRepository.findByUserName(loginRequest.userName) == null)
                 return buildResponse(

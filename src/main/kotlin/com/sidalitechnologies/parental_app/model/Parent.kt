@@ -21,8 +21,8 @@ data class Parent(
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     var password:String,
 //    just to save id instead of object
-    @DBRef
-    var student:MutableList<Student>?,
+//    @DBRef
+//    var student:MutableList<Student>?,
     val roles:MutableList<String>?,
     var createdDate:LocalDateTime?=null,
     var lastModifiedDate:LocalDateTime?=null

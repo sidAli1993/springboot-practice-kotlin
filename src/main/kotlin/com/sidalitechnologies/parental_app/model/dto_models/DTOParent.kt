@@ -16,6 +16,5 @@ data class DTOParent(
     @field:NotNull(message ="Phone must not be null")
     @field:Size(min = 9, max = 11, message = "Phone size must be greater than 8 or less than 12")
     val phone:String,
-    val student:MutableList<Student>?,
     val roles:MutableList<String>?
 )

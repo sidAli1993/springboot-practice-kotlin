@@ -27,4 +27,5 @@ data class Student(
     val phone: String?,
     @field:NotNull(message = "Email must not be empty")
     val email: String,
+    var parentId:String?=null
 )
