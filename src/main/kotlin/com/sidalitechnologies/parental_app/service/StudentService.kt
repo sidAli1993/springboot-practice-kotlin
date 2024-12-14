@@ -28,20 +28,20 @@ lateinit var studentRepository: StudentRepository
         return  stdRepo.save(student)
     }
 
-    private suspend fun getStudentByRollNo(rollNo:String):Student?{
+    suspend fun getStudentByRollNo(rollNo:String):Student?{
         val student= stdRepo.findByRollNo(rollNo) ?: return null
         return student
     }
 
-     suspend fun getStudentsByParent(parentId:String):List<Student>{
-        val students=stdRepo.findAllByParentId(parentId)
+    suspend fun getStudentsByParent(parentId:String):List<Student>{
+        val students=stdRepo.findAllByParentId(parentId).toList()
         if (students.isEmpty())
             return emptyList()
 
         return students
     }
 
-     suspend fun deleteStudents(parentId:String):Boolean {
+    suspend fun deleteStudents(parentId:String):Boolean {
         val students=getStudentsByParent(parentId)
         if (students.isEmpty())
             return false

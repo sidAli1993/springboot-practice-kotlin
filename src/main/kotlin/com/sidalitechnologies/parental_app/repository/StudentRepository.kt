@@ -10,6 +10,6 @@ import org.springframework.stereotype.Component
 
 @Component
 interface StudentRepository:CoroutineCrudRepository<Student,String> {
-     suspend fun findAllByParentId(parentId:String):List<Student>
+     suspend fun findAllByParentId(parentId:String):Flow<Student>
      suspend fun findByRollNo(rollNo:String):Student?
 }
